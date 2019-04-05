@@ -3,7 +3,10 @@ import FileSaver from 'file-saver'
 class Converter {
   _state = {
     existing_schemas: [],
-    schemas: {},
+    schemas: {
+      dca: [],
+      dct: []
+    },
     style: "",
     dialect: "",
     module_info: {},
@@ -48,6 +51,10 @@ class Converter {
     return fetch(Url)
     .then(data => data.json())
     .then(result => {
+      if (result.length === 0) {
+        throw URIError("Dialect not found.")
+      }
+
       this._state.schemas = {
         dca: [
           `href="${result[0].dca_rng}" ` +
