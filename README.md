@@ -25,11 +25,6 @@ It correctly bundles React in production mode and optimizes the build for the be
 The build is minified and the filenames include the hashes.<br>
 Your app is ready to be deployed!
 
-If you need to deploy the converter to a subdirectory on a website, change all absolute URIs in the index.html file to relative URIs:
-
-Before: "/static/...."
-After: "./static/...."
-
 See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
 
 ### `npm run eject`

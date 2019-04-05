@@ -1,6 +1,7 @@
 {
   "name": "js-dca-dct",
   "version": "0.1.0",
+  "homepage": "./",
   "private": true,
   "dependencies": {
     "file-saver": "^2.0.1",
