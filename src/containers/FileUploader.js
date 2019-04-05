@@ -6,7 +6,7 @@ class FileUploader extends Component {
       <input
         type="file"
         onChange={this.props.onUpload}
-        accept={'.tbx, .xml'} />
+        accept={'.tbx'} />
     </div>
   )
 }

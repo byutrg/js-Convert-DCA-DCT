@@ -18,7 +18,6 @@ class Converter {
     .then(xml => parser.parseFromString(xml, "text/xml"))
     .then(tbxmd => {
       let module = tbxmd.getElementsByTagName("tbxmd")[0].getAttribute("module")
-      let ns = tbxmd.getElementsByTagName("tbxmd")[0].getAttribute("ns")
       this._state.module_info[module] = {
         ns: tbxmd.getElementsByTagName("tbxmd")[0].getAttribute("ns"),
         dcs: []
@@ -79,7 +78,6 @@ class Converter {
   }
 
   _replaceWithNewStyle = (node, callback) => {
-    let prevNode = node.firstChild
     let newNode = callback(node) || node
     node.childNodes.forEach(childNode => {
       if (childNode.nodeType === 1)
@@ -124,78 +122,83 @@ class Converter {
   convert = (file) => {
     let reader = new FileReader()
 
-    reader.onload = () => {
-      let content = reader.result
+    return new Promise((resolve, reject) => {
+      reader.onload = () => {
+        let content = reader.result
 
-      let parser = new DOMParser()
-      let tbxDoc = parser.parseFromString(content, "text/xml")
+        let parser = new DOMParser()
+        let tbxDoc = parser.parseFromString(content, "text/xml")
 
-      tbxDoc.childNodes.forEach(node => {
-        if (node.nodeType === 7) {
-          this._state.existing_schemas.push(node)
-        } else if (node.nodeName === "tbx") {
-          this._state.dialect = node.getAttribute("type")
-        }
-      })
-
-      this._state.existing_schemas.forEach(schema =>
-        tbxDoc.removeChild(schema)
-      )
-
-      let body = tbxDoc.getElementsByTagName("body")[0]
-
-      this._setValidationMaterial()
-      .then(() => {
-        this._state.style = tbxDoc.getElementsByTagName("tbx")[0].getAttribute("style")
-        this._state.newStyle = (this._state.style === "dct") ? "dca" : "dct"
-        tbxDoc.getElementsByTagName("tbx")[0].setAttribute(
-          "style",
-          this._state.newStyle
-        )
-      })
-      .then(() => {
-        let schemaStyle = (this._state.dialect.match(/^TBX-Core$/i)) ? "dca" : this._state.newStyle
-        let schemas = this._state.schemas[schemaStyle]
-        schemas.forEach(instruction => {
-          let procInstruction = tbxDoc.createProcessingInstruction('xml-model', instruction)
-          tbxDoc.insertBefore(procInstruction, tbxDoc.firstChild)
+        tbxDoc.childNodes.forEach(node => {
+          if (node.nodeType === 7) {
+            this._state.existing_schemas.push(node)
+          } else if (node.nodeName === "tbx") {
+            this._state.dialect = node.getAttribute("type")
+          }
         })
 
-        let tbx = tbxDoc.documentElement
-        if (this._state.newStyle === "dct") {
-          Object.keys(this._state.module_info).forEach(module => {
-            let moduleInfo = this._state.module_info[module]
-            tbx.setAttributeNS(
-              "http://www.w3.org/2000/xmlns/",
-              `xmlns:${module}`,
-              moduleInfo.ns
-            )
-          })
-        } else {
-          Object.keys(this._state.module_info).forEach(module => {
-            tbx.removeAttributeNS(
-              "http://www.w3.org/2000/xmlns/",
-              `${module}`
-            )
-          })
-        }
-      })
-      .then(() =>
-        (this._state.style === "dct") ? this._toDCA : this._toDCT
-      )
-      .then((callback) => this._replaceWithNewStyle(body, callback))
-      .then(() => FileSaver.saveAs(
-        new Blob(
-          [(new XMLSerializer()).serializeToString(tbxDoc)],
-          {type: "text/xml;charset=utf-8"}
-        ),
-        file.name.replace(".tbx", `_${this._state.newStyle}.tbx`
-      )))
-    }
+        this._state.existing_schemas.forEach(schema =>
+          tbxDoc.removeChild(schema)
+        )
 
-    reader.readAsText(file)
+        let body = tbxDoc.getElementsByTagName("body")[0]
+
+        this._setValidationMaterial()
+        .then(() => {
+          this._state.style = tbxDoc.getElementsByTagName("tbx")[0].getAttribute("style")
+          this._state.newStyle = (this._state.style === "dct") ? "dca" : "dct"
+          tbxDoc.getElementsByTagName("tbx")[0].setAttribute(
+            "style",
+            this._state.newStyle
+          )
+        })
+        .then(() => {
+          let schemaStyle = (this._state.dialect.match(/^TBX-Core$/i)) ? "dca" : this._state.newStyle
+          let schemas = this._state.schemas[schemaStyle]
+          schemas.forEach(instruction => {
+            let procInstruction = tbxDoc.createProcessingInstruction('xml-model', instruction)
+            tbxDoc.insertBefore(procInstruction, tbxDoc.firstChild)
+          })
+
+          let tbx = tbxDoc.documentElement
+          if (this._state.newStyle === "dct") {
+            Object.keys(this._state.module_info).forEach(module => {
+              let moduleInfo = this._state.module_info[module]
+              tbx.setAttributeNS(
+                "http://www.w3.org/2000/xmlns/",
+                `xmlns:${module}`,
+                moduleInfo.ns
+              )
+            })
+          } else {
+            Object.keys(this._state.module_info).forEach(module => {
+              tbx.removeAttributeNS(
+                "http://www.w3.org/2000/xmlns/",
+                `${module}`
+              )
+            })
+          }
+        })
+        .then(() =>
+          (this._state.style === "dct") ? this._toDCA : this._toDCT
+        )
+        .then((callback) => this._replaceWithNewStyle(body, callback))
+        .then(() => FileSaver.saveAs(
+          new Blob(
+            [(new XMLSerializer()).serializeToString(tbxDoc)],
+            {type: "text/xml;charset=utf-8"}
+          ),
+          file.name.replace(".tbx", `_${this._state.newStyle}.tbx`
+        )))
+        .then(resolve)
+        .catch(reject)
+      }
+      //
+      // reader.onerror = (e) => reject(e)
+
+      reader.readAsText(file)
+    })
   }
-
 }
 
 export default Converter
