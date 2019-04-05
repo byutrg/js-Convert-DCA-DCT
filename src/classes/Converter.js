@@ -154,7 +154,8 @@ class Converter {
         )
       })
       .then(() => {
-        let schemas = this._state.schemas[this._state.newStyle]
+        let schemaStyle = (this._state.dialect.match(/^TBX-Core$/i)) ? "dca" : this._state.newStyle
+        let schemas = this._state.schemas[schemaStyle]
         schemas.forEach(instruction => {
           let procInstruction = tbxDoc.createProcessingInstruction('xml-model', instruction)
           tbxDoc.insertBefore(procInstruction, tbxDoc.firstChild)
